@@ -19,51 +19,37 @@ impl Player {
         }
     }
 
-    pub fn update(&mut self, input: &Keyboard) {
+    pub fn update(&mut self, input: &Keyboard, delta_time: f32) {
         use glium::glutin::event::VirtualKeyCode;
 
         if input.is_key_pressed(VirtualKeyCode::W) {
-            self.forward(self.walk_speed);
+            self.forward(self.walk_speed * delta_time);
         }
 
         if input.is_key_pressed(VirtualKeyCode::S) {
-            self.backward(self.walk_speed);
+            self.backward(self.walk_speed * delta_time);
         }
 
         if input.is_key_pressed(VirtualKeyCode::A) {
-            self.left(self.walk_speed);
+            self.left(self.walk_speed * delta_time);
         }
 
         if input.is_key_pressed(VirtualKeyCode::D) {
-            self.right(self.walk_speed);
+            self.right(self.walk_speed * delta_time);
         }
     }
 
-    pub fn process_event(&mut self, ev: &glium::glutin::event::Event<()>) {
+    pub fn process_event(&mut self, ev: &glium::glutin::event::Event<()>, delta_time: f32) {
         match ev {
             glium::glutin::event::Event::DeviceEvent { event, .. } => match event {
                 glium::glutin::event::DeviceEvent::MouseMotion { delta } => {
                     let d_x = delta.0 as f32;
                     let d_y = delta.1 as f32;
 
-                    self.transform.rotation.y += d_x * self.lookaround_speed;
-                    self.transform.rotation.x -= d_y * self.lookaround_speed;
+                    self.transform.rotation.y += d_x * self.lookaround_speed * delta_time;
+                    self.transform.rotation.x -= d_y * self.lookaround_speed * delta_time;
                 }
 
-                // glium::glutin::event::DeviceEvent::Key(key) => match key.virtual_keycode {
-                //     None => (),
-                //     Some(keycode) => {
-                //         if keycode == glium::glutin::event::VirtualKeyCode::W {
-                //             self.forward(self.walk_speed);
-                //         } else if keycode == glium::glutin::event::VirtualKeyCode::S {
-                //             self.backward(self.walk_speed);
-                //         } else if keycode == glium::glutin::event::VirtualKeyCode::A {
-                //             self.left(self.walk_speed);
-                //         } else if keycode == glium::glutin::event::VirtualKeyCode::D {
-                //             self.right(self.walk_speed);
-                //         }
-                //     }
-                // },
                 _ => (),
             },
             _ => (),
