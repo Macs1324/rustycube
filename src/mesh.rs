@@ -2,7 +2,13 @@ use crate::camera::Camera;
 use crate::transform;
 use crate::transform::Transform;
 use crate::vertex::Vertex;
-use glium::{backend::Facade, program::Program, uniform, IndexBuffer, Surface, VertexBuffer};
+use glium::{
+    backend::Facade,
+    program::Program,
+    uniform,
+    uniforms::{MagnifySamplerFilter, MinifySamplerFilter},
+    IndexBuffer, Surface, VertexBuffer,
+};
 
 pub struct Mesh {
     pub transform: Transform,
@@ -43,6 +49,7 @@ impl Mesh {
         &self,
         surface: &mut S,
         shader_program: &Program,
+        texture: &glium::texture::SrgbTexture2d,
         camera: &dyn Camera,
         camera_transform: Transform,
     ) {
@@ -57,7 +64,12 @@ impl Mesh {
                 &uniform! {
                     transform : transform::mat2array(self.transform.to_matrix()),
                     view : transform::mat2array(camera.view(camera_transform)),
-                    projection : transform::mat2array(camera.projection())
+                    projection : transform::mat2array(camera.projection()),
+                    albedo : glium::uniforms::Sampler(texture, glium::uniforms::SamplerBehavior {
+                        minify_filter : MinifySamplerFilter::Nearest,
+                        magnify_filter : MagnifySamplerFilter::Nearest,
+                        ..Default::default()
+                    })
                 },
                 &glium::draw_parameters::DrawParameters {
                     depth: glium::Depth {

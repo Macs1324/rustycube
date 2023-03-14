@@ -37,6 +37,13 @@ impl Player {
         if input.is_key_pressed(VirtualKeyCode::D) {
             self.right(self.walk_speed * delta_time);
         }
+
+        if input.is_key_pressed(VirtualKeyCode::Space) {
+            self.transform.position.y += self.walk_speed * delta_time;
+        }
+        if input.is_key_pressed(VirtualKeyCode::C) {
+            self.transform.position.y -= self.walk_speed * delta_time;
+        }
     }
 
     pub fn process_event(&mut self, ev: &glium::glutin::event::Event<()>, delta_time: f32) {

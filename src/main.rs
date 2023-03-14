@@ -2,15 +2,15 @@ pub mod camera;
 pub mod keyboard;
 pub mod mesh;
 pub mod player;
+pub mod texture_atlas;
 pub mod transform;
 pub mod vertex;
 pub mod xyz;
 
+use std::io::Cursor;
+
+use mesh::Mesh;
 use vertex::Vertex;
-use winit::{
-    event::Event, event::WindowEvent, event_loop::ControlFlow, event_loop::EventLoop,
-    window::WindowBuilder,
-};
 
 use glium::Surface;
 
@@ -45,15 +45,19 @@ const FRAGMENT_SHADER_SRC: &str = r#"
     in vec3 v_normal;
     in vec2 v_uv;
 
+    uniform sampler2D albedo;
+
     out vec4 final_color;
 
     void main() {
-        final_color = vec4(v_normal, 1.0);
+        final_color = texture(albedo, v_uv);
     }
 "#;
 
 fn main() {
-    let cb = glium::glutin::ContextBuilder::new().with_depth_buffer(24);
+    let cb = glium::glutin::ContextBuilder::new()
+        .with_depth_buffer(24)
+        .with_vsync(true);
     let wb = glium::glutin::window::WindowBuilder::new();
     let event_loop = glium::glutin::event_loop::EventLoop::new();
 
@@ -72,58 +76,80 @@ fn main() {
     let mut player = player::Player::new(5.0, 10.0);
     player.transform.position.z = 5.0;
 
-    let mut block: mesh::Mesh = mesh::Mesh::empty();
-    block.add_quad([
-        // BOTTOM
-        Vertex::new(0.5, -0.5, 0.5, 0.0, -1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, -0.5, -0.5, 0.0, -1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, -0.5, -0.5, 0.0, -1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, -0.5, 0.5, 0.0, -1.0, 1.0, 0.0, 0.0),
-    ]);
-    block.add_quad([
-        // TOP
-        Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, 0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-    ]);
-    block.add_quad([
-        // FRONT
-        Vertex::new(0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 0.0, 0.0),
-    ]);
-    block.add_quad([
-        // BACK
-        Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, -0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, -0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-    ]);
-    block.add_quad([
-        // RIGHT
-        Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, -0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-    ]);
-    block.add_quad([
-        // LEFT
-        Vertex::new(-0.5, 0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, -0.5, 0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, -0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-        Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, 0.0, 0.0),
-    ]);
+    let mut blocks: Vec<mesh::Mesh> = Vec::new();
+    for i in 0..128 {
+        let mut block: mesh::Mesh = mesh::Mesh::empty();
+        let nr_blocks = 3.0;
+        let block_id = i as f32 % nr_blocks;
+        let w = 1.0 / nr_blocks;
+        let h = 1.0 / 6.0;
 
-    block.build(&display);
+        block.add_quad([
+            // BOTTOM
+            Vertex::new(0.5, -0.5, 0.5, 0.0, -1.0, 0.0, w * block_id + w, h * 5.0),
+            Vertex::new(0.5, -0.5, -0.5, 0.0, -1.0, 0.0, w * block_id + w, h * 4.0),
+            Vertex::new(-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, w * block_id, h * 4.0),
+            Vertex::new(-0.5, -0.5, 0.5, 0.0, -1.0, 0.0, w * block_id, h * 5.0),
+        ]);
+        block.add_quad([
+            // TOP
+            Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, 0.0),
+            Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id + w, h),
+            Vertex::new(-0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id, h),
+            Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, 0.0),
+        ]);
+        block.add_quad([
+            // FRONT
+            Vertex::new(0.5, 0.5, 0.5, 1.0, 1.0, 1.0, w * block_id + w, h * 2.0),
+            Vertex::new(0.5, -0.5, 0.5, 1.0, 1.0, 1.0, w * block_id + w, h * 3.0),
+            Vertex::new(-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, w * block_id, h * 3.0),
+            Vertex::new(-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, w * block_id, h * 2.0),
+        ]);
+        block.add_quad([
+            // BACK
+            Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 5.0),
+            Vertex::new(-0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 6.0),
+            Vertex::new(0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 6.0),
+            Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 5.0),
+        ]);
+        block.add_quad([
+            // RIGHT
+            Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 3.0),
+            Vertex::new(0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 4.0),
+            Vertex::new(0.5, -0.5, 0.5, 0.0, 1.0, 1.0, w * block_id, h * 4.0),
+            Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id, h * 3.0),
+        ]);
+        block.add_quad([
+            // LEFT
+            Vertex::new(-0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 1.0),
+            Vertex::new(-0.5, -0.5, 0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 2.0),
+            Vertex::new(-0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 2.0),
+            Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 1.0),
+        ]);
+        block.build(&display);
+        block.transform.position.x = (i as f32 / 16.0).trunc();
+        block.transform.position.z = (i % 16) as f32;
+        block.transform.position.y = (i as f32).sin() * 1.0;
+        blocks.push(block);
+    }
+
+    let image = image::load(
+        Cursor::new(&include_bytes!("res/textures/debug.png")),
+        image::ImageFormat::Png,
+    )
+    .unwrap()
+    .to_rgba8();
+    let image_dimensions = image.dimensions();
+    let image = glium::texture::RawImage2d::from_raw_rgba(image.into_raw(), image_dimensions);
+    let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
+
     let mut delta: f32 = 1.0 / 120.0;
     player.transform.rotation.y = -90.0f32.to_radians();
 
     event_loop.run(move |ev, _, control_flow| {
         let frame_start = std::time::Instant::now();
         let next_frame_time = frame_start + std::time::Duration::from_millis(1000 / 120);
-        *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+        // *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
         *control_flow = glium::glutin::event_loop::ControlFlow::Poll;
 
@@ -146,15 +172,18 @@ fn main() {
 
             glium::glutin::event::Event::MainEventsCleared => {
                 let mut target = display.draw();
-                target.clear_color(0.1, 0.1, 0.15, 1.0);
+                target.clear_color(0.8, 0.85, 1.0, 1.0);
                 target.clear_depth(1.0);
 
-                block.draw(
-                    &mut target,
-                    &shader_program,
-                    &player.camera,
-                    player.transform,
-                );
+                for block in &blocks {
+                    block.draw(
+                        &mut target,
+                        &shader_program,
+                        &texture,
+                        &player.camera,
+                        player.transform,
+                    );
+                }
 
                 target.finish().unwrap();
             }
@@ -163,9 +192,9 @@ fn main() {
 
         player.process_event(&ev, delta);
         player.update(&keyboard_input, delta);
-        block.transform.rotation.x += 1.0 * delta;
-        block.transform.rotation.y += 1.0 * delta;
-        block.transform.rotation.z += 1.0 * delta;
+        // block.transform.rotation.x += 1.0 * delta;
+        // block.transform.rotation.y += 1.0 * delta;
+        // block.transform.rotation.z += 1.0 * delta;
         display
             .gl_window()
             .window()
