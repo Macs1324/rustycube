@@ -1,4 +1,4 @@
-use crate::transform::Transform;
+use crate::{transform::Transform, xyz::XYZ};
 use nalgebra_glm as glm;
 
 pub trait Camera {
@@ -40,15 +40,12 @@ impl Camera for PerspectiveCamera3D {
         glm::perspective(self.aspect, self.fov, self.clip_near, self.clip_far)
     }
     fn view(&self, transform: Transform) -> glm::Mat4 {
-        glm::look_at_rh(
-            &transform.position.into(),
-            &[
-                transform.position.x + transform.rotation.y.cos(),
-                transform.position.y + transform.rotation.x.sin(),
-                transform.position.z + transform.rotation.y.sin(),
-            ]
-            .into(),
-            &glm::Vec3::y(),
-        )
+        let mut lookat_point = glm::Vec3::zeros();
+        lookat_point.x = transform.rotation.y.cos() * transform.rotation.x.cos();
+        lookat_point.y = transform.rotation.x.sin();
+        lookat_point.z = transform.rotation.y.sin() * transform.rotation.x.cos();
+
+        lookat_point += &transform.position.into();
+        glm::look_at_rh(&transform.position.into(), &lookat_point, &glm::Vec3::y())
     }
 }

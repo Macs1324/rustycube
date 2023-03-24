@@ -32,8 +32,6 @@ impl Mesh {
     }
 
     pub fn build(&mut self, facade: &dyn Facade) {
-        println!("{:?}", self.indices);
-        println!("{:?}", self.vertices);
         self.vbo = Some(VertexBuffer::new(facade, &self.vertices).expect("Failed to create vbo"));
         self.vao = Some(
             IndexBuffer::new(

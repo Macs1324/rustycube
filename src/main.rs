@@ -1,3 +1,4 @@
+pub mod block;
 pub mod camera;
 pub mod keyboard;
 pub mod mesh;
@@ -73,7 +74,7 @@ fn main() {
     .expect("Failed to create shader program");
 
     let mut keyboard_input = keyboard::Keyboard::new();
-    let mut player = player::Player::new(5.0, 10.0);
+    let mut player = player::Player::new(5.0, 35.0);
     player.transform.position.z = 5.0;
 
     let mut blocks: Vec<mesh::Mesh> = Vec::new();
@@ -100,36 +101,36 @@ fn main() {
         ]);
         block.add_quad([
             // FRONT
-            Vertex::new(0.5, 0.5, 0.5, 1.0, 1.0, 1.0, w * block_id + w, h * 2.0),
-            Vertex::new(0.5, -0.5, 0.5, 1.0, 1.0, 1.0, w * block_id + w, h * 3.0),
-            Vertex::new(-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, w * block_id, h * 3.0),
-            Vertex::new(-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, w * block_id, h * 2.0),
+            Vertex::new(0.5, 0.5, 0.5, 0.0, 0.0, 1.0, w * block_id + w, h * 2.0),
+            Vertex::new(0.5, -0.5, 0.5, 0.0, 0.0, 1.0, w * block_id + w, h * 3.0),
+            Vertex::new(-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, w * block_id, h * 3.0),
+            Vertex::new(-0.5, 0.5, 0.5, 0.0, 0.0, 1.0, w * block_id, h * 2.0),
         ]);
         block.add_quad([
             // BACK
-            Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 5.0),
-            Vertex::new(-0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 6.0),
-            Vertex::new(0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 6.0),
-            Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 5.0),
+            Vertex::new(-0.5, 0.5, -0.5, 0.0, 0.0, -1.0, w * block_id + w, h * 5.0),
+            Vertex::new(-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, w * block_id + w, h * 6.0),
+            Vertex::new(0.5, -0.5, -0.5, 0.0, 0.0, -1.0, w * block_id, h * 6.0),
+            Vertex::new(0.5, 0.5, -0.5, 0.0, 0.0, -1.0, w * block_id, h * 5.0),
         ]);
         block.add_quad([
             // RIGHT
-            Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 3.0),
-            Vertex::new(0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 4.0),
-            Vertex::new(0.5, -0.5, 0.5, 0.0, 1.0, 1.0, w * block_id, h * 4.0),
-            Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id, h * 3.0),
+            Vertex::new(0.5, 0.5, -0.5, 1.0, 0.0, 0.0, w * block_id + w, h * 3.0),
+            Vertex::new(0.5, -0.5, -0.5, 1.0, 0.0, 0.0, w * block_id + w, h * 4.0),
+            Vertex::new(0.5, -0.5, 0.5, 1.0, 0.0, 0.0, w * block_id, h * 4.0),
+            Vertex::new(0.5, 0.5, 0.5, 1.0, 0.0, 0.0, w * block_id, h * 3.0),
         ]);
         block.add_quad([
             // LEFT
-            Vertex::new(-0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 1.0),
-            Vertex::new(-0.5, -0.5, 0.5, 0.0, 1.0, 1.0, w * block_id + w, h * 2.0),
-            Vertex::new(-0.5, -0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 2.0),
-            Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, h * 1.0),
+            Vertex::new(-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, w * block_id + w, h * 1.0),
+            Vertex::new(-0.5, -0.5, 0.5, -1.0, 0.0, 0.0, w * block_id + w, h * 2.0),
+            Vertex::new(-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, w * block_id, h * 2.0),
+            Vertex::new(-0.5, 0.5, -0.5, -1.0, 0.0, 0.0, w * block_id, h * 1.0),
         ]);
         block.build(&display);
         block.transform.position.x = (i as f32 / 16.0).trunc();
         block.transform.position.z = (i % 16) as f32;
-        block.transform.position.y = (i as f32).sin() * 1.0;
+        block.transform.position.y = (i as f32 / 3.0).sin() * 1.0;
         blocks.push(block);
     }
 
