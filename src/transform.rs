@@ -4,7 +4,7 @@ use nalgebra_glm as glm;
 #[derive(Clone, Copy)]
 pub struct Transform {
     pub position: XYZ,
-    pub rotation: XYZ,
+    rotation: XYZ,
     pub scale: XYZ,
 }
 
@@ -40,6 +40,22 @@ impl Transform {
         r = glm::translate(&r, &self.position.into());
 
         r
+    }
+
+    pub fn rotate_x(&mut self, angle: f32) {
+        self.rotation.x += angle % 360f32;
+    }
+
+    pub fn rotate_y(&mut self, angle: f32) {
+        self.rotation.y += angle % 360f32;
+    }
+
+    pub fn rotate_z(&mut self, angle: f32) {
+        self.rotation.z += angle % 360f32;
+    }
+
+    pub fn get_rotation(&self) -> XYZ {
+        self.rotation
     }
 }
 pub fn mat2array(m: glm::Mat4) -> [[f32; 4]; 4] {

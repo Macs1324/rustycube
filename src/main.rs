@@ -32,6 +32,7 @@ const VERTEX_SHADER_SRC: &str = r#"
     out vec3 v_position;
     out vec3 v_normal;
     out vec2 v_uv;
+    out float v_depth;
 
     void main() {
         gl_Position = projection * view * transform * vec4(position, 1.0);
@@ -39,6 +40,7 @@ const VERTEX_SHADER_SRC: &str = r#"
         v_position = position;
         v_normal = normal;
         v_uv = uv;
+        v_depth = gl_Position[3];
     }
 "#;
 
@@ -48,6 +50,7 @@ const FRAGMENT_SHADER_SRC: &str = r#"
     in vec3 v_position;
     in vec3 v_normal;
     in vec2 v_uv;
+    in float v_depth;
 
     uniform sampler2D albedo;
 
@@ -142,7 +145,7 @@ fn main() {
 
 
     let mut delta: f32 = 1.0 / 120.0;
-    player.transform.rotation.y = -90.0f32.to_radians();
+    player.transform.rotate_y(-90.0f32.to_radians());
 
     event_loop.run(move |ev, _, control_flow| {
         let frame_start = std::time::Instant::now();

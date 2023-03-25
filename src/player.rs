@@ -53,8 +53,8 @@ impl Player {
                     let d_x = delta.0 as f32;
                     let d_y = delta.1 as f32;
 
-                    self.transform.rotation.y += d_x * self.lookaround_speed * delta_time;
-                    self.transform.rotation.x -= d_y * self.lookaround_speed * delta_time;
+                    self.transform.rotate_y(d_x * self.lookaround_speed * delta_time);
+                    self.transform.rotate_x(-d_y * self.lookaround_speed * delta_time);
                 }
 
                 _ => (),
@@ -63,22 +63,22 @@ impl Player {
         }
     }
     fn forward(&mut self, speed: f32) {
-        self.transform.position.z += speed * self.transform.rotation.y.sin();
-        self.transform.position.x += speed * self.transform.rotation.y.cos();
+        self.transform.position.z += speed * self.transform.get_rotation().y.sin();
+        self.transform.position.x += speed * self.transform.get_rotation().y.cos();
     }
 
     fn backward(&mut self, speed: f32) {
-        self.transform.position.z -= speed * self.transform.rotation.y.sin();
-        self.transform.position.x -= speed * self.transform.rotation.y.cos();
+        self.transform.position.z -= speed * self.transform.get_rotation().y.sin();
+        self.transform.position.x -= speed * self.transform.get_rotation().y.cos();
     }
 
     fn left(&mut self, speed: f32) {
-        self.transform.position.x += speed * self.transform.rotation.y.sin();
-        self.transform.position.z -= speed * self.transform.rotation.y.cos();
+        self.transform.position.x += speed * self.transform.get_rotation().y.sin();
+        self.transform.position.z -= speed * self.transform.get_rotation().y.cos();
     }
 
     fn right(&mut self, speed: f32) {
-        self.transform.position.x -= speed * self.transform.rotation.y.sin();
-        self.transform.position.z += speed * self.transform.rotation.y.cos();
+        self.transform.position.x -= speed * self.transform.get_rotation().y.sin();
+        self.transform.position.z += speed * self.transform.get_rotation().y.cos();
     }
 }
