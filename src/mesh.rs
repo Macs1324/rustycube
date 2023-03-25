@@ -1,7 +1,7 @@
-use crate::camera::Camera;
 use crate::transform;
 use crate::transform::Transform;
 use crate::vertex::Vertex;
+use crate::{camera::Camera, texture_atlas::TextureAtlas};
 use glium::{
     backend::Facade,
     program::Program,

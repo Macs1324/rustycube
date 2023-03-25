@@ -13,7 +13,10 @@ use std::io::Cursor;
 use mesh::Mesh;
 use vertex::Vertex;
 
-use glium::Surface;
+use glium::{
+    glutin::{monitor::VideoMode, window::Fullscreen},
+    Surface,
+};
 
 const VERTEX_SHADER_SRC: &str = r#"
     #version 330
@@ -72,6 +75,9 @@ fn main() {
         None,
     )
     .expect("Failed to create shader program");
+
+    let atlas =
+        texture_atlas::TextureAtlas::load(&display, "res/textures/debug.png".to_owned(), 3);
 
     let mut keyboard_input = keyboard::Keyboard::new();
     let mut player = player::Player::new(5.0, 35.0);
@@ -134,15 +140,6 @@ fn main() {
         blocks.push(block);
     }
 
-    let image = image::load(
-        Cursor::new(&include_bytes!("res/textures/debug.png")),
-        image::ImageFormat::Png,
-    )
-    .unwrap()
-    .to_rgba8();
-    let image_dimensions = image.dimensions();
-    let image = glium::texture::RawImage2d::from_raw_rgba(image.into_raw(), image_dimensions);
-    let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
 
     let mut delta: f32 = 1.0 / 120.0;
     player.transform.rotation.y = -90.0f32.to_radians();
@@ -180,7 +177,7 @@ fn main() {
                     block.draw(
                         &mut target,
                         &shader_program,
-                        &texture,
+                        &atlas.get_texture(),
                         &player.camera,
                         player.transform,
                     );
