@@ -57,6 +57,18 @@ impl Transform {
     pub fn get_rotation(&self) -> XYZ {
         self.rotation
     }
+
+    pub fn set_rotation_x(&mut self, angle: f32) {
+        self.rotation.x = angle % 360f32;
+    }
+
+    pub fn set_rotation_y(&mut self, angle: f32) {
+        self.rotation.y = angle % 360f32;
+    }
+
+    pub fn set_rotation_z(&mut self, angle: f32) {
+        self.rotation.z = angle % 360f32;
+    }
 }
 pub fn mat2array(m: glm::Mat4) -> [[f32; 4]; 4] {
     let mut r: [[f32; 4]; 4] = [[0f32; 4]; 4];
