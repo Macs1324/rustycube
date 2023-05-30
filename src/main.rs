@@ -10,10 +10,14 @@ pub mod xyz;
 
 use std::io::Cursor;
 
+use block::BlockId;
 use mesh::Mesh;
 use vertex::Vertex;
 
-use glium::Surface;
+use glium::{
+    glutin::{monitor::VideoMode, window::Fullscreen},
+    Surface,
+};
 
 const VERTEX_SHADER_SRC: &str = r#"
     #version 330
@@ -29,6 +33,7 @@ const VERTEX_SHADER_SRC: &str = r#"
     out vec3 v_position;
     out vec3 v_normal;
     out vec2 v_uv;
+    out float v_depth;
 
     void main() {
         gl_Position = projection * view * transform * vec4(position, 1.0);
@@ -36,6 +41,7 @@ const VERTEX_SHADER_SRC: &str = r#"
         v_position = position;
         v_normal = normal;
         v_uv = uv;
+        v_depth = gl_Position[3];
     }
 "#;
 
@@ -45,6 +51,7 @@ const FRAGMENT_SHADER_SRC: &str = r#"
     in vec3 v_position;
     in vec3 v_normal;
     in vec2 v_uv;
+    in float v_depth;
 
     uniform sampler2D albedo;
 
@@ -73,59 +80,288 @@ fn main() {
     )
     .expect("Failed to create shader program");
 
+    let atlas = texture_atlas::TextureAtlas::load(&display, "res/textures/debug.png".to_owned())
+        .with_blocks(
+            6,
+            &vec![
+                BlockId::Air,
+                BlockId::Dirt,
+                BlockId::Grass,
+                // BlockId::Stone,
+                // BlockId::Sand,
+                // BlockId::Water,
+            ],
+        );
+
     let mut keyboard_input = keyboard::Keyboard::new();
-    let mut player = player::Player::new(5.0, 35.0);
+    let mut player = player::Player::new(5.0, 90.0);
     player.transform.position.z = 5.0;
 
     let mut blocks: Vec<mesh::Mesh> = Vec::new();
     for i in 0..128 {
         let mut block: mesh::Mesh = mesh::Mesh::empty();
         let nr_blocks = 3.0;
-        let block_id = i as f32 % nr_blocks;
+        let block_id = {
+            match i % 3 {
+                0 => BlockId::Air,
+                1 => BlockId::Dirt,
+                2 => BlockId::Grass,
+                _ => BlockId::Air,
+            }
+        };
         let w = 1.0 / nr_blocks;
         let h = 1.0 / 6.0;
 
+        let uv = atlas.get_block_uv(block_id);
+
         block.add_quad([
             // BOTTOM
-            Vertex::new(0.5, -0.5, 0.5, 0.0, -1.0, 0.0, w * block_id + w, h * 5.0),
-            Vertex::new(0.5, -0.5, -0.5, 0.0, -1.0, 0.0, w * block_id + w, h * 4.0),
-            Vertex::new(-0.5, -0.5, -0.5, 0.0, -1.0, 0.0, w * block_id, h * 4.0),
-            Vertex::new(-0.5, -0.5, 0.5, 0.0, -1.0, 0.0, w * block_id, h * 5.0),
+            Vertex::new(
+                0.5,
+                -0.5,
+                0.5,
+                0.0,
+                -1.0,
+                0.0,
+                uv.bottom[0].uv_x,
+                uv.bottom[0].uv_y,
+            ),
+            Vertex::new(
+                0.5,
+                -0.5,
+                -0.5,
+                0.0,
+                -1.0,
+                0.0,
+                uv.bottom[1].uv_x,
+                uv.bottom[1].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                -0.5,
+                -0.5,
+                0.0,
+                -1.0,
+                0.0,
+                uv.bottom[2].uv_x,
+                uv.bottom[2].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                -0.5,
+                0.5,
+                0.0,
+                -1.0,
+                0.0,
+                uv.bottom[3].uv_x,
+                uv.bottom[3].uv_y,
+            ),
         ]);
         block.add_quad([
             // TOP
-            Vertex::new(0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id + w, 0.0),
-            Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id + w, h),
-            Vertex::new(-0.5, 0.5, 0.5, 0.0, 1.0, 1.0, w * block_id, h),
-            Vertex::new(-0.5, 0.5, -0.5, 0.0, 1.0, 1.0, w * block_id, 0.0),
+            Vertex::new(
+                0.5,
+                0.5,
+                -0.5,
+                0.0,
+                1.0,
+                1.0,
+                uv.top[0].uv_x,
+                uv.top[0].uv_y,
+            ),
+            Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, uv.top[1].uv_x, uv.top[1].uv_y),
+            Vertex::new(
+                -0.5,
+                0.5,
+                0.5,
+                0.0,
+                1.0,
+                1.0,
+                uv.top[2].uv_x,
+                uv.top[2].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                0.5,
+                -0.5,
+                0.0,
+                1.0,
+                1.0,
+                uv.top[3].uv_x,
+                uv.top[3].uv_y,
+            ),
         ]);
         block.add_quad([
             // FRONT
-            Vertex::new(0.5, 0.5, 0.5, 0.0, 0.0, 1.0, w * block_id + w, h * 2.0),
-            Vertex::new(0.5, -0.5, 0.5, 0.0, 0.0, 1.0, w * block_id + w, h * 3.0),
-            Vertex::new(-0.5, -0.5, 0.5, 0.0, 0.0, 1.0, w * block_id, h * 3.0),
-            Vertex::new(-0.5, 0.5, 0.5, 0.0, 0.0, 1.0, w * block_id, h * 2.0),
+            Vertex::new(
+                0.5,
+                0.5,
+                0.5,
+                0.0,
+                0.0,
+                1.0,
+                uv.front[0].uv_x,
+                uv.front[0].uv_y,
+            ),
+            Vertex::new(
+                0.5,
+                -0.5,
+                0.5,
+                0.0,
+                0.0,
+                1.0,
+                uv.front[1].uv_x,
+                uv.front[1].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                -0.5,
+                0.5,
+                0.0,
+                0.0,
+                1.0,
+                uv.front[2].uv_x,
+                uv.front[2].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                0.5,
+                0.5,
+                0.0,
+                0.0,
+                1.0,
+                uv.front[3].uv_x,
+                uv.front[3].uv_y,
+            ),
         ]);
         block.add_quad([
             // BACK
-            Vertex::new(-0.5, 0.5, -0.5, 0.0, 0.0, -1.0, w * block_id + w, h * 5.0),
-            Vertex::new(-0.5, -0.5, -0.5, 0.0, 0.0, -1.0, w * block_id + w, h * 6.0),
-            Vertex::new(0.5, -0.5, -0.5, 0.0, 0.0, -1.0, w * block_id, h * 6.0),
-            Vertex::new(0.5, 0.5, -0.5, 0.0, 0.0, -1.0, w * block_id, h * 5.0),
+            Vertex::new(
+                -0.5,
+                0.5,
+                -0.5,
+                0.0,
+                0.0,
+                -1.0,
+                uv.back[0].uv_x,
+                uv.back[0].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                -0.5,
+                -0.5,
+                0.0,
+                0.0,
+                -1.0,
+                uv.back[1].uv_x,
+                uv.back[1].uv_y,
+            ),
+            Vertex::new(
+                0.5,
+                -0.5,
+                -0.5,
+                0.0,
+                0.0,
+                -1.0,
+                uv.back[2].uv_x,
+                uv.back[2].uv_y,
+            ),
+            Vertex::new(
+                0.5,
+                0.5,
+                -0.5,
+                0.0,
+                0.0,
+                -1.0,
+                uv.back[3].uv_x,
+                uv.back[3].uv_y,
+            ),
         ]);
         block.add_quad([
             // RIGHT
-            Vertex::new(0.5, 0.5, -0.5, 1.0, 0.0, 0.0, w * block_id + w, h * 3.0),
-            Vertex::new(0.5, -0.5, -0.5, 1.0, 0.0, 0.0, w * block_id + w, h * 4.0),
-            Vertex::new(0.5, -0.5, 0.5, 1.0, 0.0, 0.0, w * block_id, h * 4.0),
-            Vertex::new(0.5, 0.5, 0.5, 1.0, 0.0, 0.0, w * block_id, h * 3.0),
+            Vertex::new(
+                0.5,
+                0.5,
+                -0.5,
+                1.0,
+                0.0,
+                0.0,
+                uv.right[0].uv_x,
+                uv.right[0].uv_y,
+            ),
+            Vertex::new(
+                0.5,
+                -0.5,
+                -0.5,
+                1.0,
+                0.0,
+                0.0,
+                uv.right[1].uv_x,
+                uv.right[1].uv_y,
+            ),
+            Vertex::new(
+                0.5,
+                -0.5,
+                0.5,
+                1.0,
+                0.0,
+                0.0,
+                uv.right[2].uv_x,
+                uv.right[2].uv_y,
+            ),
+            Vertex::new(
+                0.5,
+                0.5,
+                0.5,
+                1.0,
+                0.0,
+                0.0,
+                uv.right[3].uv_x,
+                uv.right[3].uv_y,
+            ),
         ]);
         block.add_quad([
             // LEFT
-            Vertex::new(-0.5, 0.5, 0.5, -1.0, 0.0, 0.0, w * block_id + w, h * 1.0),
-            Vertex::new(-0.5, -0.5, 0.5, -1.0, 0.0, 0.0, w * block_id + w, h * 2.0),
-            Vertex::new(-0.5, -0.5, -0.5, -1.0, 0.0, 0.0, w * block_id, h * 2.0),
-            Vertex::new(-0.5, 0.5, -0.5, -1.0, 0.0, 0.0, w * block_id, h * 1.0),
+            Vertex::new(
+                -0.5,
+                0.5,
+                0.5,
+                -1.0,
+                0.0,
+                0.0,
+                uv.left[0].uv_x,
+                uv.left[0].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                -0.5,
+                0.5,
+                -1.0,
+                0.0,
+                0.0,
+                uv.left[1].uv_x,
+                uv.left[1].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                -0.5,
+                -0.5,
+                -1.0,
+                0.0,
+                0.0,
+                uv.left[2].uv_x,
+                uv.left[2].uv_y,
+            ),
+            Vertex::new(
+                -0.5,
+                0.5,
+                -0.5,
+                -1.0,
+                0.0,
+                0.0,
+                uv.left[3].uv_x,
+                uv.left[3].uv_y,
+            ),
         ]);
         block.build(&display);
         block.transform.position.x = (i as f32 / 16.0).trunc();
@@ -134,18 +370,8 @@ fn main() {
         blocks.push(block);
     }
 
-    let image = image::load(
-        Cursor::new(&include_bytes!("res/textures/debug.png")),
-        image::ImageFormat::Png,
-    )
-    .unwrap()
-    .to_rgba8();
-    let image_dimensions = image.dimensions();
-    let image = glium::texture::RawImage2d::from_raw_rgba(image.into_raw(), image_dimensions);
-    let texture = glium::texture::SrgbTexture2d::new(&display, image).unwrap();
-
     let mut delta: f32 = 1.0 / 120.0;
-    player.transform.rotation.y = -90.0f32.to_radians();
+    player.transform.rotate_y(-90.0f32.to_radians());
 
     event_loop.run(move |ev, _, control_flow| {
         let frame_start = std::time::Instant::now();
@@ -180,7 +406,7 @@ fn main() {
                     block.draw(
                         &mut target,
                         &shader_program,
-                        &texture,
+                        &atlas.get_texture(),
                         &player.camera,
                         player.transform,
                     );
