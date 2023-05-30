@@ -1,7 +1,11 @@
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum BlockId {
-    Empty,
+    Air,
     Dirt,
     Grass,
+    Stone,
+    Sand,
+    Water,
 }
 
 pub struct Block {

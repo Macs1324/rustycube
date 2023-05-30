@@ -41,9 +41,9 @@ impl Camera for PerspectiveCamera3D {
     }
     fn view(&self, transform: Transform) -> glm::Mat4 {
         let mut lookat_point = glm::Vec3::zeros();
-        lookat_point.x = transform.rotation.y.cos() * transform.rotation.x.cos();
-        lookat_point.y = transform.rotation.x.sin();
-        lookat_point.z = transform.rotation.y.sin() * transform.rotation.x.cos();
+        lookat_point.x = transform.get_rotation().y.cos() * transform.get_rotation().x.cos();
+        lookat_point.y = transform.get_rotation().x.sin();
+        lookat_point.z = transform.get_rotation().y.sin() * transform.get_rotation().x.cos();
 
         lookat_point += &transform.position.into();
         glm::look_at_rh(&transform.position.into(), &lookat_point, &glm::Vec3::y())
