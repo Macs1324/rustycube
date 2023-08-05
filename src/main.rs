@@ -13,7 +13,9 @@ pub mod xyz;
 use std::io::Cursor;
 
 use block::BlockId;
+use chunk::Chunk;
 use mesh::Mesh;
+use transform::Transform;
 use vertex::Vertex;
 
 use glium::{
@@ -100,6 +102,10 @@ fn main() {
     player.transform.position.z = 5.0;
 
     let mut blocks: Vec<mesh::Mesh> = Vec::new();
+    let mut chunk = Chunk::new(&Transform::zero());
+    chunk.generate_data();
+    let mut chunk_mesh = chunk.generate_mesh(None, None, None, None, &atlas);
+    chunk_mesh.build(&display);
     for i in 0..128 {
         let mut block: mesh::Mesh = mesh::Mesh::empty();
         let nr_blocks = 3.0;
@@ -413,6 +419,14 @@ fn main() {
                         player.transform,
                     );
                 }
+
+                chunk_mesh.draw(
+                    &mut target,
+                    &shader_program,
+                    &atlas.get_texture(),
+                    &player.camera,
+                    player.transform,
+                );
 
                 target.finish().unwrap();
             }

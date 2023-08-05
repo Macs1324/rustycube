@@ -7,7 +7,3 @@ pub enum BlockId {
     Sand,
     Water,
 }
-
-pub struct Block {
-    pub id: BlockId,
-}
