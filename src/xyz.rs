@@ -45,6 +45,12 @@ impl Into<glm::Vec3> for XYZ {
     }
 }
 
+impl Into<[f32; 3]> for XYZ {
+    fn into(self) -> [f32; 3] {
+        [self.x, self.y, self.z]
+    }
+}
+
 impl Add for XYZ {
     type Output = XYZ;
     fn add(self, other: XYZ) -> XYZ {

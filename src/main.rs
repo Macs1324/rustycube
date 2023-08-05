@@ -8,6 +8,7 @@ pub mod texture_atlas;
 pub mod transform;
 pub mod vertex;
 pub mod world;
+pub mod world_generator;
 pub mod xyz;
 
 use std::io::Cursor;
@@ -22,6 +23,7 @@ use glium::{
     glutin::{monitor::VideoMode, window::Fullscreen},
     Surface,
 };
+use world_generator::WorldGenerator;
 
 const VERTEX_SHADER_SRC: &str = r#"
     #version 330
@@ -84,7 +86,7 @@ fn main() {
     )
     .expect("Failed to create shader program");
 
-    let atlas = texture_atlas::TextureAtlas::load(&display, "res/textures/debug.png".to_owned())
+    let atlas = texture_atlas::TextureAtlas::load(&display, "res/textures/blocks.png".to_owned())
         .with_blocks(
             6,
             &vec![
@@ -103,7 +105,8 @@ fn main() {
 
     let mut blocks: Vec<mesh::Mesh> = Vec::new();
     let mut chunk = Chunk::new(&Transform::zero());
-    chunk.generate_data();
+    let generator = WorldGenerator::new(123);
+    chunk.generate_data(&generator);
     let mut chunk_mesh = chunk.generate_mesh(None, None, None, None, &atlas);
     chunk_mesh.build(&display);
     for i in 0..128 {
