@@ -1,11 +1,13 @@
 pub mod block;
 pub mod camera;
+pub mod chunk;
 pub mod keyboard;
 pub mod mesh;
 pub mod player;
 pub mod texture_atlas;
 pub mod transform;
 pub mod vertex;
+pub mod world;
 pub mod xyz;
 
 use std::io::Cursor;
