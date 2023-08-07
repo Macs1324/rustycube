@@ -143,7 +143,7 @@ impl TextureAtlas {
 
                     back: [
                         TextureAtlasCoords {
-                            uv_x: x,
+                            uv_x: x + w,
                             uv_y: h * 5.0,
                         },
                         TextureAtlasCoords {
@@ -151,7 +151,7 @@ impl TextureAtlas {
                             uv_y: h * 6.0,
                         },
                         TextureAtlasCoords {
-                            uv_x: x + w,
+                            uv_x: x,
                             uv_y: h * 6.0,
                         },
                         TextureAtlasCoords {

@@ -1,23 +1,32 @@
 pub mod block;
 pub mod camera;
+pub mod chunk;
 pub mod keyboard;
 pub mod mesh;
 pub mod player;
 pub mod texture_atlas;
 pub mod transform;
 pub mod vertex;
+pub mod world;
+pub mod world_generator;
 pub mod xyz;
 
-use std::io::Cursor;
+use std::{
+    io::Cursor,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 
 use block::BlockId;
+use chunk::Chunk;
 use mesh::Mesh;
+use transform::Transform;
 use vertex::Vertex;
 
 use glium::{
-    glutin::{monitor::VideoMode, window::Fullscreen},
+    glutin::{monitor::VideoMode, platform::unix::x11::ffi::CurrentTime, window::Fullscreen},
     Surface,
 };
+use world_generator::WorldGenerator;
 
 const VERTEX_SHADER_SRC: &str = r#"
     #version 330
@@ -39,7 +48,7 @@ const VERTEX_SHADER_SRC: &str = r#"
         gl_Position = projection * view * transform * vec4(position, 1.0);
 
         v_position = position;
-        v_normal = normal;
+        v_normal = transpose(inverse(mat3(transform))) * normal;
         v_uv = uv;
         v_depth = gl_Position[3];
     }
@@ -57,8 +66,18 @@ const FRAGMENT_SHADER_SRC: &str = r#"
 
     out vec4 final_color;
 
+
+
+    vec4 color_light = vec4(1.0, 1.0, 1.0, 1.0);
+    vec4 color_dark = vec4(0.4, 0.4, 0.45, 1.0);
+    vec3 direction_light = vec3(1.0, 10.0, 1.0);
+
     void main() {
         final_color = texture(albedo, v_uv);
+        float light_amount = dot(normalize(v_normal), normalize(direction_light));
+        light_amount = clamp(light_amount, 0.0, 1.0);
+
+        final_color = mix(final_color * color_dark, final_color, light_amount);
     }
 "#;
 
@@ -80,294 +99,53 @@ fn main() {
     )
     .expect("Failed to create shader program");
 
-    let atlas = texture_atlas::TextureAtlas::load(&display, "res/textures/debug.png".to_owned())
+    let atlas = texture_atlas::TextureAtlas::load(&display, "res/textures/blocks.png".to_owned())
         .with_blocks(
             6,
             &vec![
-                BlockId::Air,
+                // BlockId::Air,
                 BlockId::Dirt,
                 BlockId::Grass,
-                // BlockId::Stone,
+                BlockId::Stone,
                 // BlockId::Sand,
                 // BlockId::Water,
             ],
         );
 
     let mut keyboard_input = keyboard::Keyboard::new();
-    let mut player = player::Player::new(5.0, 90.0);
+    let mut player = player::Player::new(8.0, 180.0);
     player.transform.position.z = 5.0;
 
-    let mut blocks: Vec<mesh::Mesh> = Vec::new();
-    for i in 0..128 {
-        let mut block: mesh::Mesh = mesh::Mesh::empty();
-        let nr_blocks = 3.0;
-        let block_id = {
-            match i % 3 {
-                0 => BlockId::Air,
-                1 => BlockId::Dirt,
-                2 => BlockId::Grass,
-                _ => BlockId::Air,
-            }
-        };
-        let w = 1.0 / nr_blocks;
-        let h = 1.0 / 6.0;
+    let mut chunk = Chunk::new(&Transform::zero());
+    let generator = WorldGenerator::new({
+        let start = SystemTime::now();
+        start
+            .duration_since(UNIX_EPOCH)
+            .expect("King crimson is among us")
+            .as_millis() as u32
+    });
+    chunk.generate_data(&generator);
+    let mut chunk_mesh = chunk.generate_mesh(None, None, None, None, &atlas);
+    chunk_mesh.build(&display);
 
-        let uv = atlas.get_block_uv(block_id);
+    let mut chunks: Vec<Chunk> = Vec::new();
+    let mut chunk_meshes: Vec<Mesh> = Vec::new();
+    let render_distance = 10;
 
-        block.add_quad([
-            // BOTTOM
-            Vertex::new(
-                0.5,
-                -0.5,
-                0.5,
-                0.0,
-                -1.0,
-                0.0,
-                uv.bottom[0].uv_x,
-                uv.bottom[0].uv_y,
-            ),
-            Vertex::new(
-                0.5,
-                -0.5,
-                -0.5,
-                0.0,
-                -1.0,
-                0.0,
-                uv.bottom[1].uv_x,
-                uv.bottom[1].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                -0.5,
-                -0.5,
-                0.0,
-                -1.0,
-                0.0,
-                uv.bottom[2].uv_x,
-                uv.bottom[2].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                -0.5,
-                0.5,
-                0.0,
-                -1.0,
-                0.0,
-                uv.bottom[3].uv_x,
-                uv.bottom[3].uv_y,
-            ),
-        ]);
-        block.add_quad([
-            // TOP
-            Vertex::new(
-                0.5,
-                0.5,
-                -0.5,
-                0.0,
-                1.0,
-                1.0,
-                uv.top[0].uv_x,
-                uv.top[0].uv_y,
-            ),
-            Vertex::new(0.5, 0.5, 0.5, 0.0, 1.0, 1.0, uv.top[1].uv_x, uv.top[1].uv_y),
-            Vertex::new(
-                -0.5,
-                0.5,
-                0.5,
-                0.0,
-                1.0,
-                1.0,
-                uv.top[2].uv_x,
-                uv.top[2].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                0.5,
-                -0.5,
-                0.0,
-                1.0,
-                1.0,
-                uv.top[3].uv_x,
-                uv.top[3].uv_y,
-            ),
-        ]);
-        block.add_quad([
-            // FRONT
-            Vertex::new(
-                0.5,
-                0.5,
-                0.5,
-                0.0,
-                0.0,
-                1.0,
-                uv.front[0].uv_x,
-                uv.front[0].uv_y,
-            ),
-            Vertex::new(
-                0.5,
-                -0.5,
-                0.5,
-                0.0,
-                0.0,
-                1.0,
-                uv.front[1].uv_x,
-                uv.front[1].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                -0.5,
-                0.5,
-                0.0,
-                0.0,
-                1.0,
-                uv.front[2].uv_x,
-                uv.front[2].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                0.5,
-                0.5,
-                0.0,
-                0.0,
-                1.0,
-                uv.front[3].uv_x,
-                uv.front[3].uv_y,
-            ),
-        ]);
-        block.add_quad([
-            // BACK
-            Vertex::new(
-                -0.5,
-                0.5,
-                -0.5,
-                0.0,
-                0.0,
-                -1.0,
-                uv.back[0].uv_x,
-                uv.back[0].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                -0.5,
-                -0.5,
-                0.0,
-                0.0,
-                -1.0,
-                uv.back[1].uv_x,
-                uv.back[1].uv_y,
-            ),
-            Vertex::new(
-                0.5,
-                -0.5,
-                -0.5,
-                0.0,
-                0.0,
-                -1.0,
-                uv.back[2].uv_x,
-                uv.back[2].uv_y,
-            ),
-            Vertex::new(
-                0.5,
-                0.5,
-                -0.5,
-                0.0,
-                0.0,
-                -1.0,
-                uv.back[3].uv_x,
-                uv.back[3].uv_y,
-            ),
-        ]);
-        block.add_quad([
-            // RIGHT
-            Vertex::new(
-                0.5,
-                0.5,
-                -0.5,
-                1.0,
-                0.0,
-                0.0,
-                uv.right[0].uv_x,
-                uv.right[0].uv_y,
-            ),
-            Vertex::new(
-                0.5,
-                -0.5,
-                -0.5,
-                1.0,
-                0.0,
-                0.0,
-                uv.right[1].uv_x,
-                uv.right[1].uv_y,
-            ),
-            Vertex::new(
-                0.5,
-                -0.5,
-                0.5,
-                1.0,
-                0.0,
-                0.0,
-                uv.right[2].uv_x,
-                uv.right[2].uv_y,
-            ),
-            Vertex::new(
-                0.5,
-                0.5,
-                0.5,
-                1.0,
-                0.0,
-                0.0,
-                uv.right[3].uv_x,
-                uv.right[3].uv_y,
-            ),
-        ]);
-        block.add_quad([
-            // LEFT
-            Vertex::new(
-                -0.5,
-                0.5,
-                0.5,
-                -1.0,
-                0.0,
-                0.0,
-                uv.left[0].uv_x,
-                uv.left[0].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                -0.5,
-                0.5,
-                -1.0,
-                0.0,
-                0.0,
-                uv.left[1].uv_x,
-                uv.left[1].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                -0.5,
-                -0.5,
-                -1.0,
-                0.0,
-                0.0,
-                uv.left[2].uv_x,
-                uv.left[2].uv_y,
-            ),
-            Vertex::new(
-                -0.5,
-                0.5,
-                -0.5,
-                -1.0,
-                0.0,
-                0.0,
-                uv.left[3].uv_x,
-                uv.left[3].uv_y,
-            ),
-        ]);
-        block.build(&display);
-        block.transform.position.x = (i as f32 / 16.0).trunc();
-        block.transform.position.z = (i % 16) as f32;
-        block.transform.position.y = (i as f32 / 3.0).sin() * 1.0;
-        blocks.push(block);
+    for i in 0..render_distance {
+        for j in 0..render_distance {
+            let mut transform = Transform::zero();
+            transform.position.x = i as f32;
+            transform.position.z = j as f32;
+            let mut chunk = Chunk::new(&transform);
+
+            chunk.generate_data(&generator);
+            let mut chunk_mesh = chunk.generate_mesh(None, None, None, None, &atlas);
+            chunk_mesh.build(&display);
+
+            chunk_meshes.push(chunk_mesh);
+            chunks.push(chunk);
+        }
     }
 
     let mut delta: f32 = 1.0 / 120.0;
@@ -402,8 +180,16 @@ fn main() {
                 target.clear_color(0.8, 0.85, 1.0, 1.0);
                 target.clear_depth(1.0);
 
-                for block in &blocks {
-                    block.draw(
+                chunk_mesh.draw(
+                    &mut target,
+                    &shader_program,
+                    &atlas.get_texture(),
+                    &player.camera,
+                    player.transform,
+                );
+
+                for mesh in &chunk_meshes {
+                    mesh.draw(
                         &mut target,
                         &shader_program,
                         &atlas.get_texture(),
