@@ -7,6 +7,7 @@ use crate::{
     transform::Transform,
     vertex::Vertex,
     world_generator::WorldGenerator,
+    xyz::XYZ,
 };
 
 const CHUNK_HEIGHT: usize = 32;
@@ -34,15 +35,21 @@ impl Chunk {
     }
 
     pub fn generate_data(&mut self, generator: &WorldGenerator) {
+        let factor = 3;
         for h in 0..CHUNK_HEIGHT {
             for w in 0..CHUNK_WIDTH {
                 for d in 0..CHUNK_DEPTH {
-                    self.data[h][w][d] = generator.get_block_at([w as i64, h as i64, d as i64]);
+                    self.data[h][w][d] = generator.get_block_at([
+                        w as i64 + self.transform.position.x as i64 * CHUNK_WIDTH as i64,
+                        h as i64,
+                        d as i64 + self.transform.position.z as i64 * CHUNK_DEPTH as i64,
+                    ]);
                 }
             }
         }
     }
 
+    // TODO! Avoid generating faces that are hidden by the neighbors.
     pub fn generate_mesh(
         &self,
         neighbor_left: Option<&Chunk>,
@@ -57,7 +64,7 @@ impl Chunk {
             for w in 0..CHUNK_WIDTH {
                 for d in 0..CHUNK_DEPTH {
                     let block_id: BlockId = self.data[h][w][d];
-                    println!("Generating {:?} at {} {} {}", block_id, w, h, d);
+                    // println!("Generating {:?} at {} {} {}", block_id, w, h, d);
                     if block_id == BlockId::Air {
                         continue;
                     }
@@ -121,6 +128,10 @@ impl Chunk {
         }
 
         mesh.transform = self.transform;
+        mesh.transform.position.x *= CHUNK_WIDTH as f32 - 1.0;
+        mesh.transform.position.y *= CHUNK_HEIGHT as f32;
+        mesh.transform.position.z *= CHUNK_DEPTH as f32 - 1.0;
+
         mesh
     }
 

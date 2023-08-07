@@ -13,7 +13,7 @@ impl Player {
     pub fn new(walk_speed: f32, lookaround_speed: f32) -> Player {
         Player {
             transform: Transform::zero(),
-            camera: PerspectiveCamera3D::new(16.0 / 9.0, 3.14 / 4.0, 0.01, 1024.0),
+            camera: PerspectiveCamera3D::new(16.0 / 9.0, 3.14 / 1.7, 0.01, 1024.0),
             walk_speed,
             lookaround_speed,
         }
