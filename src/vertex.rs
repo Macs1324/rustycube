@@ -1,4 +1,4 @@
-use crate::xyz::XYZ;
+use crate::vector3::Vector3;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Vertex {
@@ -25,7 +25,7 @@ impl Vertex {
         }
     }
 
-    pub fn new_xyz(pos: XYZ, norm: XYZ, uv: [f32; 2]) -> Vertex {
+    pub fn new_xyz(pos: Vector3, norm: Vector3, uv: [f32; 2]) -> Vertex {
         Vertex {
             position: [pos.x, pos.y, pos.z],
             normal: [norm.x, norm.y, norm.z],

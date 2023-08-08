@@ -1,18 +1,16 @@
-use std::println;
-
 use crate::{
     block::BlockId,
     mesh::Mesh,
     texture_atlas::{BlockUv, TextureAtlas},
     transform::Transform,
+    vector3::Vector3,
     vertex::Vertex,
     world_generator::WorldGenerator,
-    xyz::XYZ,
 };
 
-const CHUNK_HEIGHT: usize = 32;
-const CHUNK_WIDTH: usize = 32;
-const CHUNK_DEPTH: usize = 32;
+const CHUNK_HEIGHT: usize = 256;
+const CHUNK_WIDTH: usize = 16;
+const CHUNK_DEPTH: usize = 16;
 
 pub enum ChunkNeighbor {
     LeftNeighbor,
@@ -64,7 +62,6 @@ impl Chunk {
             for w in 0..CHUNK_WIDTH {
                 for d in 0..CHUNK_DEPTH {
                     let block_id: BlockId = self.data[h][w][d];
-                    // println!("Generating {:?} at {} {} {}", block_id, w, h, d);
                     if block_id == BlockId::Air {
                         continue;
                     }

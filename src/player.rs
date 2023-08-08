@@ -119,7 +119,6 @@ impl Player {
             );
         }
 
-        println!("velocity: {:?}", self.kinematic_body.velocity);
         self.transform.position = self.transform.position
             + self
                 .kinematic_body

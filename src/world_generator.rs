@@ -1,5 +1,12 @@
 use noise::{NoiseFn, OpenSimplex, Perlin, Seedable};
 
+const ROCK_MAX_HEIGHT: i64 = 100;
+const DIRT_LAYER_HEIGHT: i64 = 120;
+const HILL_LAYER_HEIGHT: i64 = 148;
+const HILL_MAX_HEIGHT: i64 = 32;
+
+const TOTAL_HEIGHT: i64 = ROCK_MAX_HEIGHT + DIRT_LAYER_HEIGHT + HILL_LAYER_HEIGHT + HILL_MAX_HEIGHT;
+
 use crate::block::BlockId;
 
 pub struct WorldGenerator {
@@ -15,13 +22,12 @@ impl WorldGenerator {
     }
     pub fn get_block_at(&self, point: [i64; 3]) -> BlockId {
         let factor = 5.0;
-        if point[1] < 8 {
+        if point[1] < ROCK_MAX_HEIGHT {
             let noise = self.noise_3d.get([
                 point[0] as f64 / factor,
                 point[1] as f64 / factor,
                 point[2] as f64 / factor,
             ]);
-            println!("noise: {}", noise);
             if noise > 0.0 {
                 if noise < 0.5 {
                     BlockId::Stone
@@ -31,17 +37,17 @@ impl WorldGenerator {
             } else {
                 BlockId::Air
             }
-        } else if point[1] < 10 {
+        } else if point[1] < DIRT_LAYER_HEIGHT {
             BlockId::Dirt
-        } else if point[1] < 24 {
+        } else if point[1] < HILL_LAYER_HEIGHT {
             let factor = 30.0;
             let height = self
                 .noise_2d
-                .get([point[0] as f64 / factor, point[2] as f64 / factor])
-                .powi(2);
+                .get([point[0] as f64 / factor, point[2] as f64 / factor]);
 
-            println!("{} {}", point[1] as f64, ((height + 1.0) / 2.0) * 32.0);
-            if (point[1] as f64) < ((height + 1.0) / 2.0) * 24.0 {
+            if (point[1] as f64)
+                < DIRT_LAYER_HEIGHT as f64 + ((height + 1.0) / 2.0) * HILL_MAX_HEIGHT as f64
+            {
                 BlockId::Grass
             } else {
                 BlockId::Air

@@ -1,4 +1,4 @@
-use crate::xyz::XYZ;
+use crate::vector3::Vector3;
 
 pub const DEFAULT_GRAVITY: f32 = 9.81;
 
@@ -6,7 +6,7 @@ pub struct KinematicBody {
     pub gravity: f32,
     pub mass: f32,
 
-    pub velocity: XYZ,
+    pub velocity: Vector3,
 }
 
 impl KinematicBody {
@@ -15,7 +15,7 @@ impl KinematicBody {
             gravity: DEFAULT_GRAVITY,
             mass,
 
-            velocity: XYZ::zero(),
+            velocity: Vector3::zero(),
         }
     }
 
