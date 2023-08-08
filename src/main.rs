@@ -115,7 +115,7 @@ fn main() {
         );
 
     let mut keyboard_input = keyboard::Keyboard::new();
-    let mut player = player::Player::new(8.0, 180.0, 0.3, 0.4);
+    let mut player = player::Player::new(8.0, 180.0, 100.0, 10.0);
     player.transform.position.z = 5.0;
 
     let mut chunk = Chunk::new(&Transform::zero());
@@ -132,7 +132,7 @@ fn main() {
 
     let mut chunks: Vec<Chunk> = Vec::new();
     let mut chunk_meshes: Vec<Mesh> = Vec::new();
-    let render_distance = 1;
+    let render_distance = 5;
 
     for i in 0..render_distance {
         for j in 0..render_distance {

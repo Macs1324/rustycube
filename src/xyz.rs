@@ -43,6 +43,14 @@ impl XYZ {
         }
         *self / length
     }
+
+    pub fn rotated_y(&self, angle: f32) -> XYZ {
+        XYZ {
+            x: self.x * angle.cos() - self.z * angle.sin(),
+            y: self.y,
+            z: self.x * angle.sin() + self.z * angle.cos(),
+        }
+    }
 }
 
 impl<T: Into<usize>> std::ops::Index<T> for XYZ {

@@ -39,7 +39,7 @@ impl Player {
         if input.is_key_pressed(VirtualKeyCode::W) {
             self.kinematic_body.velocity.z = move_toward(
                 self.kinematic_body.velocity.z,
-                self.walk_speed,
+                -self.walk_speed,
                 self.walk_acceleration * delta_time,
             );
         } else {
@@ -53,7 +53,7 @@ impl Player {
         if input.is_key_pressed(VirtualKeyCode::S) {
             self.kinematic_body.velocity.z = move_toward(
                 self.kinematic_body.velocity.z,
-                -self.walk_speed,
+                self.walk_speed,
                 self.walk_acceleration * delta_time,
             );
         } else {
@@ -119,9 +119,13 @@ impl Player {
             );
         }
 
-        println!("velocity: {:?}", self.kinematic_body.velocity.normalized());
+        println!("velocity: {:?}", self.kinematic_body.velocity);
         self.transform.position = self.transform.position
-            + self.kinematic_body.velocity.normalized() * self.walk_speed * delta_time;
+            + self
+                .kinematic_body
+                .velocity
+                .rotated_y(self.transform.get_rotation().y + 90.0f32.to_radians())
+                * delta_time;
     }
 
     pub fn process_event(&mut self, ev: &glium::glutin::event::Event<()>, delta_time: f32) {
