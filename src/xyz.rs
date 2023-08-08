@@ -9,6 +9,13 @@ pub struct XYZ {
 }
 
 impl XYZ {
+    pub fn zero() -> XYZ {
+        XYZ {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        }
+    }
     pub fn rad(&self) -> XYZ {
         XYZ {
             x: self.x.to_radians(),
@@ -23,6 +30,18 @@ impl XYZ {
             y: self.y.to_degrees(),
             z: self.z.to_degrees(),
         }
+    }
+
+    pub fn length(&self) -> f32 {
+        (self.x * self.x * self.x + self.y * self.y * self.y + self.z * self.z * self.z).cbrt()
+    }
+
+    pub fn normalized(&self) -> XYZ {
+        let length = self.length();
+        if length == 0.0 {
+            return XYZ::zero();
+        }
+        *self / length
     }
 }
 
@@ -69,6 +88,50 @@ impl Sub for XYZ {
             x: self.x - other.x,
             y: self.y - other.y,
             z: self.z - other.z,
+        }
+    }
+}
+
+impl Add<f32> for XYZ {
+    type Output = XYZ;
+    fn add(self, other: f32) -> XYZ {
+        XYZ {
+            x: self.x + other,
+            y: self.y + other,
+            z: self.z + other,
+        }
+    }
+}
+
+impl Sub<f32> for XYZ {
+    type Output = XYZ;
+    fn sub(self, other: f32) -> XYZ {
+        XYZ {
+            x: self.x - other,
+            y: self.y - other,
+            z: self.z - other,
+        }
+    }
+}
+
+impl std::ops::Mul<f32> for XYZ {
+    type Output = XYZ;
+    fn mul(self, other: f32) -> XYZ {
+        XYZ {
+            x: self.x * other,
+            y: self.y * other,
+            z: self.z * other,
+        }
+    }
+}
+
+impl std::ops::Div<f32> for XYZ {
+    type Output = XYZ;
+    fn div(self, other: f32) -> XYZ {
+        XYZ {
+            x: self.x / other,
+            y: self.y / other,
+            z: self.z / other,
         }
     }
 }

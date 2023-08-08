@@ -2,10 +2,12 @@ pub mod block;
 pub mod camera;
 pub mod chunk;
 pub mod keyboard;
+pub mod kinematic_body;
 pub mod mesh;
 pub mod player;
 pub mod texture_atlas;
 pub mod transform;
+pub mod util;
 pub mod vertex;
 pub mod world;
 pub mod world_generator;
@@ -113,7 +115,7 @@ fn main() {
         );
 
     let mut keyboard_input = keyboard::Keyboard::new();
-    let mut player = player::Player::new(8.0, 180.0);
+    let mut player = player::Player::new(8.0, 180.0, 0.3, 0.4);
     player.transform.position.z = 5.0;
 
     let mut chunk = Chunk::new(&Transform::zero());
@@ -130,7 +132,7 @@ fn main() {
 
     let mut chunks: Vec<Chunk> = Vec::new();
     let mut chunk_meshes: Vec<Mesh> = Vec::new();
-    let render_distance = 10;
+    let render_distance = 1;
 
     for i in 0..render_distance {
         for j in 0..render_distance {
