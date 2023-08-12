@@ -18,6 +18,7 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 
+use bevy_ecs::prelude::*;
 use block::BlockId;
 use chunk::Chunk;
 use mesh::Mesh;
@@ -84,6 +85,8 @@ const FRAGMENT_SHADER_SRC: &str = r#"
 "#;
 
 fn main() {
+    let mut world = World::new();
+    let mut schedule = Schedule::default();
     let cb = glium::glutin::ContextBuilder::new()
         .with_depth_buffer(24)
         .with_vsync(true);
@@ -118,7 +121,6 @@ fn main() {
     let mut player = player::Player::new(8.0, 180.0, 50.0, 10.0);
     player.transform.position.z = 5.0;
 
-    let mut chunk = Chunk::new(&Transform::zero());
     let generator = WorldGenerator::new({
         let start = SystemTime::now();
         start
@@ -126,14 +128,12 @@ fn main() {
             .expect("King crimson is among us")
             .as_millis() as u32
     });
-    chunk.generate_data(&generator);
-    let mut chunk_mesh = chunk.generate_mesh(None, None, None, None, &atlas);
-    chunk_mesh.build(&display);
 
     let mut chunks: Vec<Chunk> = Vec::new();
     let mut chunk_meshes: Vec<Mesh> = Vec::new();
     let render_distance = 10;
 
+    let mut c = 0;
     for i in 0..render_distance {
         for j in 0..render_distance {
             let mut transform = Transform::zero();
@@ -147,6 +147,11 @@ fn main() {
 
             chunk_meshes.push(chunk_mesh);
             chunks.push(chunk);
+            c += 1;
+            println!(
+                "Generating world: {}%",
+                (c as f32 * 100.0) / (render_distance as f32 * render_distance as f32)
+            );
         }
     }
 
@@ -183,14 +188,6 @@ fn main() {
                 target.clear_color(0.8, 0.85, 1.0, 1.0);
                 target.clear_depth(1.0);
 
-                chunk_mesh.draw(
-                    &mut target,
-                    &shader_program,
-                    &atlas.get_texture(),
-                    &player.camera,
-                    player.transform,
-                );
-
                 for mesh in &chunk_meshes {
                     mesh.draw(
                         &mut target,
@@ -206,6 +203,7 @@ fn main() {
             _ => (),
         }
 
+        schedule.run(&mut world);
         player.process_event(&ev, delta);
         player.update(&keyboard_input, delta);
         display
