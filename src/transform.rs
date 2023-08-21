@@ -1,27 +1,27 @@
-use crate::xyz::XYZ;
+use crate::vector3::Vector3;
 use nalgebra_glm as glm;
 
 #[derive(Clone, Copy)]
 pub struct Transform {
-    pub position: XYZ,
-    rotation: XYZ,
-    pub scale: XYZ,
+    pub position: Vector3,
+    rotation: Vector3,
+    pub scale: Vector3,
 }
 
 impl Transform {
     pub fn zero() -> Transform {
         Transform {
-            position: XYZ {
+            position: Vector3 {
                 x: 0f32,
                 y: 0f32,
                 z: 0f32,
             },
-            rotation: XYZ {
+            rotation: Vector3 {
                 x: 0f32,
                 y: 0f32,
                 z: 0f32,
             },
-            scale: XYZ {
+            scale: Vector3 {
                 x: 1f32,
                 y: 1f32,
                 z: 1f32,
@@ -54,7 +54,7 @@ impl Transform {
         self.rotation.z += angle % 360f32;
     }
 
-    pub fn get_rotation(&self) -> XYZ {
+    pub fn get_rotation(&self) -> Vector3 {
         self.rotation
     }
 

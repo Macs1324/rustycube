@@ -1,4 +1,4 @@
-use crate::{transform::Transform, xyz::XYZ};
+use crate::{transform::Transform, vector3::Vector3};
 use nalgebra_glm as glm;
 
 pub trait Camera {

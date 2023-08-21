@@ -2,14 +2,16 @@ pub mod block;
 pub mod camera;
 pub mod chunk;
 pub mod keyboard;
+pub mod kinematic_body;
 pub mod mesh;
 pub mod player;
 pub mod texture_atlas;
 pub mod transform;
+pub mod util;
+pub mod vector3;
 pub mod vertex;
 pub mod world;
 pub mod world_generator;
-pub mod xyz;
 
 use std::{
     io::Cursor,
@@ -113,7 +115,7 @@ fn main() {
         );
 
     let mut keyboard_input = keyboard::Keyboard::new();
-    let mut player = player::Player::new(8.0, 180.0);
+    let mut player = player::Player::new(8.0, 180.0, 50.0, 10.0);
     player.transform.position.z = 5.0;
 
     let mut chunk = Chunk::new(&Transform::zero());
@@ -150,11 +152,12 @@ fn main() {
 
     let mut delta: f32 = 1.0 / 120.0;
     player.transform.rotate_y(-90.0f32.to_radians());
+    player.transform.position.y = 130.0;
 
     event_loop.run(move |ev, _, control_flow| {
         let frame_start = std::time::Instant::now();
         let next_frame_time = frame_start + std::time::Duration::from_millis(1000 / 120);
-        // *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
+        *control_flow = glium::glutin::event_loop::ControlFlow::WaitUntil(next_frame_time);
 
         *control_flow = glium::glutin::event_loop::ControlFlow::Poll;
 
@@ -205,9 +208,6 @@ fn main() {
 
         player.process_event(&ev, delta);
         player.update(&keyboard_input, delta);
-        // block.transform.rotation.x += 1.0 * delta;
-        // block.transform.rotation.y += 1.0 * delta;
-        // block.transform.rotation.z += 1.0 * delta;
         display
             .gl_window()
             .window()
