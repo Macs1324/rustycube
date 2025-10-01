@@ -13,21 +13,14 @@ pub mod vertex;
 pub mod world;
 pub mod world_generator;
 
-use std::{
-    io::Cursor,
-    time::{Instant, SystemTime, UNIX_EPOCH},
-};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use block::BlockId;
 use chunk::Chunk;
 use mesh::Mesh;
 use transform::Transform;
-use vertex::Vertex;
 
-use glium::{
-    glutin::{monitor::VideoMode, platform::unix::x11::ffi::CurrentTime, window::Fullscreen},
-    Surface,
-};
+use glium::Surface;
 use world_generator::WorldGenerator;
 
 const VERTEX_SHADER_SRC: &str = r#"
@@ -87,11 +80,23 @@ fn main() {
     let cb = glium::glutin::ContextBuilder::new()
         .with_depth_buffer(24)
         .with_vsync(true);
-    let wb = glium::glutin::window::WindowBuilder::new();
+    let wb = glium::glutin::window::WindowBuilder::new().with_title("Rustycube");
     let event_loop = glium::glutin::event_loop::EventLoop::new();
+    println!("Created event loop");
 
     let display = glium::Display::new(wb, cb, &event_loop).expect("Failed to create display");
     display.gl_window().window().set_cursor_visible(false);
+    display
+        .gl_window()
+        .window()
+        .set_cursor_grab(glium::glutin::window::CursorGrabMode::Locked)
+        .or_else(|_| {
+            display
+                .gl_window()
+                .window()
+                .set_cursor_grab(glium::glutin::window::CursorGrabMode::Confined)
+        })
+        .expect("Failed to grab cursor");
 
     let shader_program = glium::program::Program::from_source(
         &display,
@@ -100,6 +105,8 @@ fn main() {
         None,
     )
     .expect("Failed to create shader program");
+
+    println!("Created shader program");
 
     let atlas = texture_atlas::TextureAtlas::load(&display, "res/textures/blocks.png".to_owned())
         .with_blocks(
@@ -119,6 +126,7 @@ fn main() {
     player.transform.position.z = 5.0;
 
     let mut chunk = Chunk::new(&Transform::zero());
+    println!("Create empty root chunk");
     let generator = WorldGenerator::new({
         let start = SystemTime::now();
         start
@@ -126,13 +134,16 @@ fn main() {
             .expect("King crimson is among us")
             .as_millis() as u32
     });
+    println!("Set up world generator");
     chunk.generate_data(&generator);
+    println!("Generated chunk data");
     let mut chunk_mesh = chunk.generate_mesh(None, None, None, None, &atlas);
+    println!("Generated chunk mesh");
     chunk_mesh.build(&display);
 
     let mut chunks: Vec<Chunk> = Vec::new();
     let mut chunk_meshes: Vec<Mesh> = Vec::new();
-    let render_distance = 10;
+    let render_distance = 1;
 
     for i in 0..render_distance {
         for j in 0..render_distance {
@@ -170,7 +181,7 @@ fn main() {
                 _ => return,
             },
             glium::glutin::event::Event::DeviceEvent { event, .. } => {
-                keyboard_input.process_event(&event);
+                keyboard_input.process_event(event);
             }
             glium::glutin::event::Event::NewEvents(cause) => match cause {
                 glium::glutin::event::StartCause::ResumeTimeReached { .. } => (),
@@ -186,7 +197,7 @@ fn main() {
                 chunk_mesh.draw(
                     &mut target,
                     &shader_program,
-                    &atlas.get_texture(),
+                    atlas.get_texture(),
                     &player.camera,
                     player.transform,
                 );
@@ -195,7 +206,7 @@ fn main() {
                     mesh.draw(
                         &mut target,
                         &shader_program,
-                        &atlas.get_texture(),
+                        atlas.get_texture(),
                         &player.camera,
                         player.transform,
                     );

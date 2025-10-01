@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-glium="*"
-nalgebra-glm = "0.3"
-image="*"
+glium="0.32.1"
+nalgebra-glm = "0.18.0"
+image="0.24.7"
 noise="0.8.2"
